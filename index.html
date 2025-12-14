@@ -1,18 +1,3 @@
-Das sind sehr schöne Ideen\! Das wird das Spiel visuell viel runder machen.
-
-Ich habe deine Wünsche wie folgt umgesetzt:
-
-1.  **Globaler Hintergrund:** Ich habe den Regenbogen-Hintergrund und den Canvas für die Effekte (Zahlen/Tiere) aus dem Startbildschirm herausgelöst und in einen globalen Container gepackt. Dieser bleibt nun aktiv, wenn man vom Startmenü ins Levelmenü wechselt.
-2.  **Matrix-Regen (Start & Levelwahl):** Die Zahlen sind jetzt deutlich größer (`30px`) und fallen langsamer, genau wie im Bonusspiel.
-3.  **Level-Farben:** Die Buttons im Level-Menü haben nun alle 10 Level eine neue, sanfte Pastellfarbe. Das hilft super bei der Orientierung.
-4.  **Gewonnen-Bildschirm (Modal):**
-      * Der Hintergrund ist jetzt auch der Regenbogen.
-      * Der Zahlenregen stoppt dort.
-      * Stattdessen läuft **"The Animal Walk"**: Basierend auf der Levelnummer laufen Emojis der Spiel-Tiere (Fuchs, Einhorn, Roboter etc.) gemütlich durch das Bild. Bei Level 1 ist es eins, bei Level 100 ist es ein Gewusel von 100 Tieren.
-
-Hier ist der finale Code mit allen Nuancen:
-
-```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -45,7 +30,7 @@ Hier ist der finale Code mit allen Nuancen:
         /* --- GLOBAL BACKGROUND (Rainbow & Effects) --- */
         #global-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 90; /* Behind Overlay Screens (100), Above Game (1) if visible */
+            z-index: 90; 
             background: linear-gradient(120deg, #FF9AA2, #FFB7B2, #FFDAC1, #E2F0CB, #B5EAD7, #C7CEEA);
             background-size: 400% 400%;
             animation: rainbowBG 15s ease infinite;
@@ -73,7 +58,8 @@ Hier ist der finale Code mit allen Nuancen:
 
         /* --- CENTER DISPLAY --- */
         #target-display { position: absolute; top: 15%; left: 50%; transform: translate(-50%, 0); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        #current-char { order: 1; font-size: 5rem; color: white; text-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; animation: float 3s ease-in-out infinite; line-height: 1; }
+        /* ÄNDERUNG: Font-Size verdoppelt auf 10rem */
+        #current-char { order: 1; font-size: 10rem; color: white; text-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; animation: float 3s ease-in-out infinite; line-height: 1; }
         #next-chars { order: 2; font-size: 2rem; color: rgba(255,255,255,0.9); letter-spacing: 5px; background: rgba(0, 0, 0, 0.2); padding: 5px 20px; border-radius: 20px; backdrop-filter: blur(2px); }
 
         /* --- KEYBOARD --- */
@@ -103,17 +89,12 @@ Hier ist der finale Code mit allen Nuancen:
         /* --- MENUS --- */
         .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         
-        /* Start Screen transparent to show global BG */
         #start-screen { background: transparent; }
         #level-screen { background: transparent; }
-        
-        /* Modal needs transparent background to see rainbow, but content needs box */
         #modal-screen { background: transparent !important; }
 
         .hidden { display: none !important; }
         h1 { font-size: 4rem; color: var(--primary); margin: 0; text-shadow: 2px 2px 0 #fff; }
-        
-        /* Text Shadows for readability on Rainbow */
         #start-screen h1, #level-screen h1, #modal-screen h1 { color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         #start-screen h2 { color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
@@ -123,7 +104,6 @@ Hier ist der finale Code mit allen Nuancen:
         .btn.small { padding: 8px 15px; font-size: 0.9rem; box-shadow: 0 2px 0 #8AC6B3; }
         .btn.toggle-on { background: var(--secondary); } .btn.toggle-off { background: var(--btn-inactive); color: #888; box-shadow: 0 2px 0 #ccc; }
 
-        /* USER SWITCHER */
         .user-switch { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 30px; backdrop-filter: blur(5px); }
         .user-btn { padding: 10px 30px; border-radius: 25px; border: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; background: transparent; color: #fff; transition: all 0.2s; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .user-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-shadow: none; }
@@ -134,38 +114,27 @@ Hier ist der finale Code mit allen Nuancen:
         .level-btn.active-level { border: 4px solid #fff; transform: scale(1.1); z-index: 2; box-shadow: 0 0 15px rgba(255,255,255,0.8); }
         .level-stars { color: gold; font-size: 1rem; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
 
-        /* OPTIONS */
         .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; background: white; padding: 30px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 70vh; overflow-y: auto; width: 700px; }
         .setting-group label { font-weight: bold; color: var(--primary); }
         select { width: 100%; padding: 8px; border-radius: 8px; border: 2px solid var(--secondary); font-family: 'Fredoka', sans-serif; }
         .grid-full { grid-column: span 2; border-top: 1px solid #eee; padding-top: 10px; }
 
-        /* FLASH OVERLAY */
         #level-flash { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 6rem; color: var(--primary); font-weight: bold; opacity: 0; pointer-events: none; z-index: 200; text-shadow: 2px 2px 0 #fff, 0 0 20px rgba(255,255,255,0.8); text-align: center; width: 100%; transition: opacity 0.5s; display: flex; flex-direction: column; align-items: center;}
         #flash-countdown { font-size: 4rem; color: #4A404F; margin-top: 10px; }
 
-        /* MINIGAME & RESULTS */
         #minigame-ui { position: absolute; top: 20px; right: 20px; z-index: 60; }
         .result-stats { width: 500px; background: rgba(255,255,255,0.95); padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(5px); }
         .bar-bg { width: 100%; height: 15px; background: #eee; border-radius: 10px; overflow: hidden; }
         .bar-fill { height: 100%; width: 0%; transition: width 1s ease-out; }
-        
         .bar-fill.green { background-color: #4CAF50; }
         .bar-fill.blue { background-color: #42A5F5; }
-
         .result-text-box { width: 100%; height: 80px; overflow-y: auto; background: #f4f4f4; border-radius: 10px; padding: 10px; margin-top: 15px; text-align: left; font-family: monospace; font-size: 1.1rem; border: 2px solid #eee; white-space: pre-wrap; }
         .res-char.correct { color: #4CAF50; } .res-char.wrong { color: #FF5252; text-decoration: line-through; font-weight: bold; }
 
-        /* Result Star Animations */
         .result-stars { font-size: 4rem; margin: 10px 0; display: inline-block; }
         .pop-stars { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 20px gold, 0 0 10px orange; }
         
-        @keyframes popIn { 
-            0% { transform: scale(0); opacity: 0; } 
-            70% { transform: scale(1.2); } 
-            100% { transform: scale(1); opacity: 1; } 
-        }
-
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .shake { animation: shake 0.3s; }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } 100% { transform: translateX(0); } }
@@ -348,7 +317,7 @@ Hier ist der finale Code mit allen Nuancen:
         <button class="btn" id="btn-close-options">Zurück</button>
     </div>
 
-    <div id="pause-screen" class="overlay-screen hidden" style="background: rgba(255,255,255,0.95);">
+    <div id="pause-screen" class="overlay-screen hidden">
         <h1>Pause</h1>
         <button class="btn" id="btn-resume">Weiter (Esc)</button>
         <button class="btn small" id="btn-quit">Zum Menü</button>
@@ -871,6 +840,14 @@ Hier ist der finale Code mit allen Nuancen:
                 this.kbColor = 'fingers';
                 this.kbError = 'flash';
 
+                // Shift-Map for German Keyboard Layout
+                this.shiftMap = {
+                    "^": "°", "1": "!", "2": "\"", "3": "§", "4": "$", "5": "%",
+                    "6": "&", "7": "/", "8": "(", "9": ")", "0": "=", "ß": "?",
+                    "<": ">", ",": ";", ".": ":", "-": "_", "#": "'", "+": "*",
+                    "´": "`"
+                };
+
                 this.ui = {
                     screens: {
                         start: document.getElementById('start-screen'),
@@ -913,7 +890,7 @@ Hier ist der finale Code mit allen Nuancen:
                 this.loadUserScores();
                 this.initKeyboardUI(); 
                 this.setupListeners(); 
-                this.initBackgroundEffect('rain'); // Start with rain
+                this.initBackgroundEffect('rain'); 
                 this.renderLevelSelect();
             }
 
@@ -1016,8 +993,14 @@ Hier ist der finale Code mit allen Nuancen:
                         const keyDiv = document.createElement('div'); keyDiv.className = 'key';
                         keyDiv.textContent = char.length > 2 ? char : char.toUpperCase();
                         const dataChar = char.toLowerCase();
-                        keyDiv.dataset.char = dataChar;
+                        keyDiv.dataset.char = dataChar; // Default normal char
+                        keyDiv.dataset.normal = char; // Store normal state
                         
+                        // Calculate shifted char
+                        let shifted = char.toUpperCase();
+                        if (this.shiftMap[char]) shifted = this.shiftMap[char];
+                        keyDiv.dataset.shifted = shifted; // Store shifted state
+
                         if(char.length > 1) keyDiv.classList.add(char === ' ' ? 'space' : 'wide');
                         if(char === 'Enter' || char === 'Shift' || char === 'Del' || char === 'Tab' || char === 'Caps') keyDiv.classList.add('cmd');
 
@@ -1032,6 +1015,22 @@ Hier ist der finale Code mit allen Nuancen:
                     container.appendChild(rowDiv);
                 });
                 const spaceRow = document.createElement('div'); spaceRow.className = 'row'; const spaceKey = document.createElement('div'); spaceKey.className = 'key space'; spaceKey.dataset.char = " "; spaceKey.textContent = "LEERTASTE"; spaceRow.appendChild(spaceKey); container.appendChild(spaceRow);
+            }
+
+            toggleKeyboardShift(active) {
+                const keys = document.querySelectorAll('.key');
+                keys.forEach(k => {
+                    if (k.dataset.shifted) {
+                        const newChar = active ? k.dataset.shifted : k.dataset.normal;
+                        // For letters, we just uppercase visually but handle logic usually via keycode, 
+                        // but for symbols we want to show the new symbol.
+                        if (k.textContent.length === 1) {
+                            k.textContent = newChar;
+                        }
+                        // Update dataset char so highlight logic works for Shift chars (like " or !)
+                        k.dataset.char = newChar.toLowerCase();
+                    }
+                });
             }
 
             setupListeners() {
@@ -1061,6 +1060,8 @@ Hier ist der finale Code mit allen Nuancen:
                 };
 
                 window.addEventListener('keydown', (e) => {
+                    if (e.key === "Shift") this.toggleKeyboardShift(true);
+
                     if (e.key === "Enter") {
                         if (!this.ui.screens.start.classList.contains('hidden')) this.startGame();
                         else if (!this.ui.screens.level.classList.contains('hidden')) this.startLevel(this.currentLevelIdx);
@@ -1068,7 +1069,11 @@ Hier ist der finale Code mit allen Nuancen:
                     } else if (e.key === "Escape") { if (this.isGameActive || this.isPaused) this.togglePause(); }
                     else { this.handleTyping(e); }
                 });
-                window.addEventListener('keyup', (e) => this.handleKeyUp(e));
+                
+                window.addEventListener('keyup', (e) => {
+                    if (e.key === "Shift") this.toggleKeyboardShift(false);
+                    this.handleKeyUp(e);
+                });
             }
 
             closeOptions() {
@@ -1087,12 +1092,12 @@ Hier ist der finale Code mit allen Nuancen:
                 if(this.isGameActive) { 
                     this.isPaused = false; 
                     this.world.container.style.filter = "none"; 
-                    this.ui.bgContainer.style.display = 'none'; // Hide BG in game
+                    this.ui.bgContainer.style.display = 'none'; 
                     this.initBackgroundEffect('none');
                     this.showScreen('game'); 
                 } else { 
                     this.ui.bgContainer.style.display = 'block'; 
-                    this.initBackgroundEffect('rain'); // Restore BG
+                    this.initBackgroundEffect('rain'); 
                     this.showScreen('level'); 
                 } 
             }
@@ -1100,14 +1105,13 @@ Hier ist der finale Code mit allen Nuancen:
             
             startGame() { 
                 this.audio.init(); 
-                // Keep background visible for level menu
                 this.showScreen('level'); 
             }
             
             toMenu() { 
                 this.isGameActive = false; this.isPaused = false; 
                 this.ui.bgContainer.style.display = 'block'; 
-                this.initBackgroundEffect('rain'); // Start rain again for menu
+                this.initBackgroundEffect('rain'); 
                 this.showScreen('level'); 
             }
             togglePause(forcePause = false) {
@@ -1120,13 +1124,11 @@ Hier ist der finale Code mit allen Nuancen:
 
             renderLevelSelect() {
                 const container = document.getElementById('level-container'); container.innerHTML = "";
-                // Colors for 10-level blocks
                 const colors = ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA', '#90CAF9', '#CE93D8', '#F48FB1', '#80CBC4'];
                 
                 LEVELS.forEach((lvl, idx) => {
                     const btn = document.createElement('div'); btn.className = 'level-btn';
                     
-                    // Apply color based on group
                     const colorIdx = Math.floor(idx / 10) % colors.length;
                     btn.style.backgroundColor = colors[colorIdx];
 
@@ -1158,7 +1160,6 @@ Hier ist der finale Code mit allen Nuancen:
                 this.isGameActive = false; 
                 this.typedHistory = [];
                 
-                // Hide global BG during game
                 this.ui.bgContainer.style.display = 'none';
                 this.initBackgroundEffect('none');
 
@@ -1220,8 +1221,24 @@ Hier ist der finale Code mit allen Nuancen:
             }
 
             handleKeyUp(e) { const keyEl = this.findKeyElement(e.key); if (keyEl) keyEl.classList.remove('pressed'); }
-            findKeyElement(char) { const lower = char.toLowerCase(); if (char === " ") return document.querySelector('.key.space'); return document.querySelector(`.key[data-char="${lower}"]`); }
-            highlightKey(char) { document.querySelectorAll('.key.active').forEach(el => el.classList.remove('active')); const el = this.findKeyElement(char); if (el) el.classList.add('active'); }
+            
+            findKeyElement(char) { 
+                const lower = char.toLowerCase(); 
+                if (char === " ") return document.querySelector('.key.space'); 
+                // Fix for special chars like " which need careful selector
+                try {
+                    return document.querySelector(`.key[data-char='${lower}']`);
+                } catch(e) {
+                    return null;
+                }
+            }
+            
+            highlightKey(char) { 
+                document.querySelectorAll('.key.active').forEach(el => el.classList.remove('active')); 
+                const el = this.findKeyElement(char); 
+                if (el) el.classList.add('active'); 
+            }
+            
             updateDisplay() {
                 const current = this.targetString[this.currentIndex];
                 const next = this.targetString.substring(this.currentIndex + 1, this.currentIndex + 10);
@@ -1253,9 +1270,8 @@ Hier ist der finale Code mit allen Nuancen:
                     localStorage.setItem(`tastenZauberScores_${this.currentUser}`, JSON.stringify(this.scores));
                 }
                 
-                // Show Global BG for Modal but change effect
                 this.ui.bgContainer.style.display = 'block';
-                this.initBackgroundEffect('animals', lvlId); // Pass Level ID as Count
+                this.initBackgroundEffect('animals', lvlId); 
 
                 const modalTitle = document.getElementById('modal-title');
                 const starDisplay = document.getElementById('result-stars');
@@ -1271,7 +1287,7 @@ Hier ist der finale Code mit allen Nuancen:
                     btnDirect.classList.remove('hidden');
                     btnDirect.innerText = `Zu Level ${LEVELS[this.currentLevelIdx + 1].id}`;
                 } else {
-                    btnDirect.classList.add('hidden'); // End of game
+                    btnDirect.classList.add('hidden'); 
                 }
 
                 modalTitle.innerText = "Level geschafft!";
@@ -1279,7 +1295,7 @@ Hier ist der finale Code mit allen Nuancen:
                 
                 starDisplay.innerText = starStr;
                 starDisplay.classList.remove('pop-stars');
-                void starDisplay.offsetWidth; // trigger reflow
+                void starDisplay.offsetWidth; 
                 starDisplay.classList.add('pop-stars');
 
                 lblSpeed.innerText = speedPct + "%"; lblAcc.innerText = accPct + "%";
@@ -1301,8 +1317,6 @@ Hier ist der finale Code mit allen Nuancen:
 
             startMiniGame() {
                 this.showScreen('none');
-                
-                // Hide BG for Minigame (uses its own canvas logic)
                 this.ui.bgContainer.style.display = 'none';
                 this.initBackgroundEffect('none');
 
@@ -1346,4 +1360,3 @@ Hier ist der finale Code mit allen Nuancen:
     </script>
 </body>
 </html>
-```
