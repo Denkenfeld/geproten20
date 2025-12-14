@@ -1,3 +1,13 @@
+Alles klar, das sind die letzten Feinschliffe\!
+
+Hier sind die Änderungen:
+
+1.  **Matrix-Effekt (Hintergrund):** Die Zahlen sind jetzt riesig (Schriftgröße 90 statt 30) und fallen sehr langsam und majestätisch. Das wirkt jetzt viel ruhiger und "magischer".
+2.  **Tiere (Gewonnen-Bildschirm):** Ich habe die Liste der laufenden Tiere um drei Hunde-Emojis erweitert (🐶, 🐕, 🐩), um Billy, Luni und Charlie zu repräsentieren.
+
+Hier ist der finale, komplette Code:
+
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -58,7 +68,6 @@
 
         /* --- CENTER DISPLAY --- */
         #target-display { position: absolute; top: 15%; left: 50%; transform: translate(-50%, 0); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        /* ÄNDERUNG: Font-Size verdoppelt auf 10rem */
         #current-char { order: 1; font-size: 10rem; color: white; text-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; animation: float 3s ease-in-out infinite; line-height: 1; }
         #next-chars { order: 2; font-size: 2rem; color: rgba(255,255,255,0.9); letter-spacing: 5px; background: rgba(0, 0, 0, 0.2); padding: 5px 20px; border-radius: 20px; backdrop-filter: blur(2px); }
 
@@ -905,7 +914,7 @@
 
                 if (mode === 'rain') {
                     // Start Screen Rain: Big, Slow, Matrix-style but white
-                    const fontSize = 30; // Bigger
+                    const fontSize = 90; // Bigger font size
                     const columns = canvas.width / fontSize;
                     const drops = [];
                     for(let i=0; i<columns; i++) drops[i] = Math.random() * -10;
@@ -920,13 +929,13 @@
                             const text = String.fromCharCode(48 + Math.floor(Math.random()*10)); // Numbers
                             ctx.fillText(text, i*fontSize, drops[i]*fontSize);
                             if(drops[i]*fontSize > canvas.height && Math.random() > 0.98) drops[i] = 0;
-                            drops[i] += 0.5; // Slower
+                            drops[i] += 0.15; // Slower speed
                         }
-                    }, 50); // Slower interval
+                    }, 50);
                 } else if (mode === 'animals') {
                     // Modal Screen: Walking Animals
                     const animalCount = param || 1;
-                    const emojis = ['🦊', '🦄', '🐻', '🐰', '🐱', '🐷', '🤖'];
+                    const emojis = ['🦊', '🦄', '🐻', '🐰', '🐱', '🐷', '🤖', '🐶', '🐕', '🐩']; // Added dogs
                     const walkers = [];
                     for(let i=0; i<animalCount; i++) {
                         walkers.push({
@@ -1225,7 +1234,6 @@
             findKeyElement(char) { 
                 const lower = char.toLowerCase(); 
                 if (char === " ") return document.querySelector('.key.space'); 
-                // Fix for special chars like " which need careful selector
                 try {
                     return document.querySelector(`.key[data-char='${lower}']`);
                 } catch(e) {
@@ -1360,3 +1368,4 @@
     </script>
 </body>
 </html>
+```
