@@ -958,14 +958,12 @@
                 canvas.height = window.innerHeight;
 
                 if (mode === 'rain') {
-                    // Start Screen Rain: Readable falling chars
                     const fontSize = 60; 
                     const columns = canvas.width / fontSize;
                     const drops = [];
                     for(let i=0; i<columns; i++) drops[i] = Math.random() * -10;
 
                     this.bgInterval = setInterval(() => {
-                        // Higher opacity clear for shorter trail = better readability
                         ctx.fillStyle = "rgba(0, 0, 0, 0.15)"; 
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
@@ -977,9 +975,9 @@
                             ctx.fillText(text, i*fontSize + 10, drops[i]*fontSize);
                             
                             if(drops[i]*fontSize > canvas.height && Math.random() > 0.98) drops[i] = 0;
-                            drops[i] += 0.2; 
+                            drops[i] += 0.25; 
                         }
-                    }, 50);
+                    }, 70);
                 } else if (mode === 'animals') {
                     const animalCount = param || 1;
                     const emojis = ['🦊', '🦄', '🐻', '🐰', '🐱', '🐷', '🤖', '🐶', '🐕', '🐩'];
@@ -1022,20 +1020,7 @@
                 canvas.height = window.innerHeight;
 
                 const trackColors = ["#FFCDD2", "#FFE0B2", "#FFF9C4", "#C8E6C9", "#C8E6C9", "#B3E5FC", "#B3E5FC", "#FFF9C4", "#FFE0B2", "#FFCDD2", "#FFCDD2"];
-                const keyMap = ['q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 'ü']; // Basic mapping to columns
-                // Actually need full mapping A-Z to 11 columns (0-10) based on keyboard layout logic
-                // Pinky L: q, a, y, <, 1 (Col 0)
-                // Ring L: w, s, x, 2 (Col 1)
-                // Mid L: e, d, c, 3 (Col 2)
-                // Idx L1: r, f, v, 4 (Col 3)
-                // Idx L2: t, g, b, 5 (Col 4)
-                // Idx R1: z, h, n, 6 (Col 5)
-                // Idx R2: u, j, m, 7 (Col 6)
-                // Mid R: i, k, ,, 8 (Col 7)
-                // Ring R: o, l, ., 9 (Col 8)
-                // Pinky R1: p, ö, -, 0 (Col 9)
-                // Pinky R2: ü, ä, +, ß (Col 10)
-
+                
                 const colMap = {
                     'a':0, 'q':0, 'y':0, '1':0, '<':0,
                     's':1, 'w':1, 'x':1, '2':1,
@@ -1053,8 +1038,8 @@
                 const trackWidth = 70;
                 const totalWidth = 11 * trackWidth;
                 const startX = (canvas.width - totalWidth) / 2;
-                const targetY = canvas.height - 180; // Above keyboard
-                const tolerance = 50;
+                const targetY = canvas.height / 2; // CENTER
+                const tolerance = 60; // 20% bigger
 
                 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                 let queue = letters.split('');
@@ -1063,7 +1048,6 @@
                 let spawnTimer = 0;
                 let running = true;
 
-                // Stop previous loop logic
                 this.stopAlphaGame = () => {
                     running = false;
                     this.ui.alphaCanvas.style.display = 'none';
@@ -1091,21 +1075,21 @@
                         const note = activeNotes[targetNoteIdx];
                         const diff = Math.abs(note.y - targetY);
                         
-                        if (diff < tolerance) {
-                            // Perfect Hit
-                            createAlphaExplosion(note.x, note.y, "#fff");
+                        if (diff <= tolerance) {
+                            // Perfect / Hotzone
+                            createAlphaExplosion(note.x, note.y, "#fff"); 
                             this.audio.playCorrect(note.char.charCodeAt(0));
-                            this.world.triggerDualReaction('hit');
+                            this.world.triggerDualReaction('hit'); 
                             this.score += 20;
                             activeNotes.splice(targetNoteIdx, 1);
-                        } else if (diff < tolerance * 2) {
-                            // Late/Early but hit
-                            this.score += 5;
-                            const type = note.y < targetY ? 'early' : 'late';
-                            this.world.triggerDualReaction(type);
-                            activeNotes.splice(targetNoteIdx, 1);
                         } else {
-                            // Too far off - ignore or penalty
+                            // Outside Hotzone - No Jump, but hit
+                            this.score += 5; 
+                            const type = note.y < targetY ? 'early' : 'late';
+                            this.world.triggerDualReaction(type); 
+                            
+                            createAlphaExplosion(note.x, note.y, "rgba(255,255,255,0.5)"); 
+                            activeNotes.splice(targetNoteIdx, 1);
                         }
                         this.ui.display.score.innerText = this.score;
                     }
@@ -1144,14 +1128,14 @@
                             y: -50,
                             col: col
                         });
-                        spawnTimer = 150 - (speed * 10); // Adjust spawn rate based on speed
+                        spawnTimer = 150 - (speed * 10); 
                     }
                     spawnTimer--;
 
                     // Update & Draw Notes
                     for (let i = 0; i < activeNotes.length; i++) {
                         let n = activeNotes[i];
-                        n.y += speed * 0.8; // Fall speed
+                        n.y += speed * 0.8; 
 
                         // Draw Smartie
                         ctx.beginPath();
@@ -1168,7 +1152,6 @@
                         ctx.textBaseline = "middle";
                         ctx.fillText(n.char, n.x, n.y);
 
-                        // Missed?
                         if (n.y > canvas.height) {
                             activeNotes.splice(i, 1);
                             i--;
@@ -1190,7 +1173,6 @@
                     }
                     ctx.globalAlpha = 1;
 
-                    // Win Condition
                     if (queue.length === 0 && activeNotes.length === 0 && particles.length === 0) {
                         this.levelComplete();
                         running = false;
