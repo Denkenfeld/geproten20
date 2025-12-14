@@ -38,7 +38,10 @@
         }
         @keyframes rainbowBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
-        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.4; } /* Opacity slightly up for visibility */
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.4; }
+
+        /* --- ALPHA GAME CANVAS (Level 101) --- */
+        #alpha-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 55; pointer-events: none; display: none; }
 
         /* --- UI OVERLAY --- */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
@@ -62,7 +65,7 @@
         #next-chars { order: 2; font-size: 2rem; color: rgba(255,255,255,0.9); letter-spacing: 5px; background: rgba(0, 0, 0, 0.2); padding: 5px 20px; border-radius: 20px; backdrop-filter: blur(2px); }
 
         /* --- KEYBOARD --- */
-        #keyboard-wrapper { margin-bottom: 30px; display: flex; justify-content: center; width: 100%; }
+        #keyboard-wrapper { margin-bottom: 30px; display: flex; justify-content: center; width: 100%; position: relative; z-index: 60;}
         .keyboard { background: var(--keyboard-bg); padding: 20px; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(5px); display: flex; flex-direction: column; gap: 8px; width: 950px; transition: width 0.3s; }
         .keyboard.macbook { width: 1100px; } 
         
@@ -143,8 +146,7 @@
 
     <div id="canvas-container"></div>
     <canvas id="mini-game-canvas" style="position: absolute; top:0; left:0; width:100%; height:100%; display:none; z-index:50;"></canvas>
-    
-    <div id="global-bg">
+    <canvas id="alpha-canvas"></canvas> <div id="global-bg">
         <canvas id="bg-canvas"></canvas>
     </div>
 
@@ -165,6 +167,11 @@
             </div>
             
             <div class="header-right">
+                <div class="vol-control hidden" id="alpha-speed-ctrl">
+                    <span>Fall-Tempo</span>
+                    <input type="range" id="val-alpha-speed" min="1" max="10" value="3">
+                </div>
+
                 <div class="vol-control">
                     <span>🎵 Musik</span>
                     <input type="range" id="vol-music" min="0" max="100" value="80">
@@ -461,6 +468,9 @@
             add(99, "Vor dem Finale", "all", "Du bist bereit für das große Finale. Deine Geschwindigkeit ist top, deine Genauigkeit perfekt. Hedy sagt: „Wow!“, Keno: „Super!“, Mama und Papa: „Wir sind so stolz auf dich!“");
             add(100, "Glückwunsch – 10-Finger-Meister!", "all", "Herzlichen Glückwunsch! Du hast alle 100 Level gemeistert. Du beherrschst das 10-Finger-System jetzt perfekt – schnell, sicher und ohne hinzuschauen. Hedy, Keno, Mama und Papa jubeln: „Du bist der allerbeste Tipp-Star der Welt!“ Feiere deinen Erfolg – du hast es verdient!");
 
+            // LEVEL 101 - ALPHA GAME
+            add(101, "Alpha-Rhythmus (A-Z)", "all", "abcdefghijklmnopqrstuvwxyz");
+
             return levels;
         };
         const LEVELS = generateLevels();
@@ -725,10 +735,27 @@
                 if(group === this.mascot) { this.eyeL = eyeL; this.eyeR = eyeR; this.snout = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.2), new THREE.MeshStandardMaterial({ color:0xffffff })); this.snout.position.set(0, 1.8, 0.75); group.add(this.snout); }
             }
             setMascot(type) {
+                this.mascotType = type;
                 if (type === 'random') { const types = ['fox', 'unicorn', 'bear', 'bunny', 'cat', 'pig', 'robot']; type = types[Math.floor(Math.random() * types.length)]; }
                 this.createCharacter(type, this.mascot);
                 this.createCharacter('robot', this.npc);
                 this.npc.visible = false;
+            }
+            setDualMascots(enable) {
+                // SPECIAL MODE FOR LEVEL 101
+                if(enable) {
+                    this.npc.visible = true;
+                    // Reset NPC to look like the main mascot or a partner
+                    this.createCharacter(this.mascotType, this.npc); 
+                    this.mascot.position.set(-6, 0, 0);
+                    this.npc.position.set(6, 0, 0);
+                    this.mascot.rotation.y = Math.PI / 4;
+                    this.npc.rotation.y = -Math.PI / 4;
+                } else {
+                    this.npc.visible = false;
+                    this.mascot.position.set(0, 0, 0);
+                    this.mascot.rotation.y = 0;
+                }
             }
             createEnvironment() {
                 while(this.scene.getObjectByName("env_island")) { this.scene.remove(this.scene.getObjectByName("env_island")); }
@@ -754,24 +781,18 @@
                 geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) ); this.particles = new THREE.Points( geometry, new THREE.PointsMaterial( { color: 0xFFFFFF, size: 0.1 } ) ); this.scene.add( this.particles );
             }
             triggerReaction() {
-                if(this.animMode === 'chase') {
-                    this.chaseState.targetX += 1.5; 
-                    return;
+                // Generic reaction
+                this.jumpTime = 0; this.isJumping = true; 
+            }
+            triggerDualReaction(type) {
+                // Reaction for Level 101 (Both animals)
+                if(type === 'hit') {
+                    this.isJumping = true; this.jumpTime = 0;
+                } else if(type === 'early') {
+                    this.isWinking = true; this.winkTime = 0;
+                } else if(type === 'late') {
+                    this.isSpinning = true;
                 }
-                let mode = this.animMode;
-                if(mode === 'random') { const modes = ['jump', 'wink', 'spin', 'mouth', 'grow', 'shrink']; mode = modes[Math.floor(Math.random() * modes.length)]; }
-                
-                if(mode === 'spin') { 
-                    if (!this.isSpinning) {
-                        this.isSpinning = true; 
-                        this.mascot.rotation.y = 0; 
-                    }
-                }
-                else if(mode === 'jump') { this.jumpTime = 0; this.isJumping = true; }
-                else if(mode === 'wink') { this.winkTime = 0; this.isWinking = true; }
-                else if(mode === 'mouth') { this.mouthTime = 0; this.isMouthing = true; }
-                else if(mode === 'grow') { this.scaleTime = 0; this.isGrowing = true; }
-                else if(mode === 'shrink') { this.scaleTime = 0; this.isShrinking = true; }
             }
             resetChase() {
                 this.chaseState = { playerX: -6, npcX: 8, dir: 1, targetX: -6 };
@@ -802,24 +823,49 @@
                     this.mascot.position.z = 1; this.npc.position.z = -1.5;
 
                 } else {
-                    this.npc.visible = false;
-                    this.mascot.position.x = 0; this.mascot.position.z = 0;
-                    if (this.isJumping) { this.jumpTime += delta * 5; this.mascot.position.y = Math.sin(this.jumpTime) * 1.5; if(this.jumpTime > Math.PI) { this.isJumping = false; this.mascot.position.y = 0; } } 
-                    else if (this.isWinking) { this.winkTime += delta * 10; const s = Math.max(0.1, Math.cos(this.winkTime)); this.eyeL.scale.y = s; this.eyeR.scale.y = s; if(this.winkTime > Math.PI * 2) { this.isWinking = false; this.eyeL.scale.y = 1; this.eyeR.scale.y = 1; } }
-                    else if(this.isSpinning) { 
-                        this.mascot.rotation.y += delta * 12; 
-                        if(this.mascot.rotation.y >= Math.PI * 2) { 
-                            this.isSpinning = false; 
-                            this.mascot.rotation.y = 0; 
+                    // Standard / Dual Animation
+                    // Apply animation to BOTH if visible (Level 101)
+                    const targets = [this.mascot];
+                    if(this.npc.visible) targets.push(this.npc);
+
+                    targets.forEach(target => {
+                        if (this.isJumping) { 
+                            this.jumpTime += delta * 5; 
+                            target.position.y = Math.sin(this.jumpTime) * 1.5; 
+                            if(this.jumpTime > Math.PI) { this.isJumping = false; target.position.y = 0; } 
                         } 
-                    }
-                    else if(this.isMouthing) { this.mouthTime += delta * 15; this.snout.position.z = 0.75 + Math.sin(this.mouthTime) * 0.1; if(this.mouthTime > Math.PI * 2) { this.isMouthing = false; this.snout.position.z = 0.75; } }
-                    else if(this.isGrowing) { this.scaleTime += delta * 5; const s = 1 + Math.sin(this.scaleTime) * 0.3; this.mascot.scale.set(s,s,s); if(this.scaleTime > Math.PI) { this.isGrowing = false; this.mascot.scale.set(1,1,1); } }
-                    else if(this.isShrinking) { this.scaleTime += delta * 5; const s = 1 - Math.sin(this.scaleTime) * 0.3; this.mascot.scale.set(s,s,s); if(this.scaleTime > Math.PI) { this.isShrinking = false; this.mascot.scale.set(1,1,1); } }
-                    else { 
-                        this.mascot.position.y = Math.sin(time * 1.5) * 0.2; 
-                        this.mascot.rotation.y = 0;
-                    }
+                        else if (this.isWinking) { 
+                            this.winkTime += delta * 10; 
+                            // This is specific to mascot structure, simple blink for now
+                            target.scale.y = 0.9 + Math.sin(this.winkTime)*0.1;
+                            if(this.winkTime > Math.PI * 2) { this.isWinking = false; target.scale.y = 1; } 
+                        }
+                        else if(this.isSpinning) { 
+                            target.rotation.y += delta * 12; 
+                            if(target.rotation.y >= Math.PI * 2) { 
+                                this.isSpinning = false; 
+                                target.rotation.y = this.npc.visible ? (target === this.mascot ? Math.PI/4 : -Math.PI/4) : 0; 
+                            } 
+                        }
+                        else if(this.isMouthing) { 
+                            this.mouthTime += delta * 15; 
+                            // Reset
+                            if(this.mouthTime > Math.PI * 2) { this.isMouthing = false; } 
+                        }
+                        else if(this.isGrowing) { 
+                            this.scaleTime += delta * 5; const s = 1 + Math.sin(this.scaleTime) * 0.3; 
+                            target.scale.set(s,s,s); 
+                            if(this.scaleTime > Math.PI) { this.isGrowing = false; target.scale.set(1,1,1); } 
+                        }
+                        else if(this.isShrinking) { 
+                            this.scaleTime += delta * 5; const s = 1 - Math.sin(this.scaleTime) * 0.3; 
+                            target.scale.set(s,s,s); 
+                            if(this.scaleTime > Math.PI) { this.isShrinking = false; target.scale.set(1,1,1); } 
+                        }
+                        else { 
+                            target.position.y = Math.sin(time * 1.5) * 0.2; 
+                        }
+                    });
                 }
                 if(this.particles) this.particles.rotation.y += 0.001; this.renderer.render(this.scene, this.camera);
             }
@@ -846,7 +892,7 @@
                 this.kbColor = 'fingers';
                 this.kbError = 'flash';
 
-                // Shift-Map for German Keyboard Layout
+                // Shift-Map
                 this.shiftMap = {
                     "^": "°", "1": "!", "2": "\"", "3": "§", "4": "$", "5": "%",
                     "6": "&", "7": "/", "8": "(", "9": ")", "0": "=", "ß": "?",
@@ -879,7 +925,8 @@
                         kbColor: document.getElementById('sel-kb-color'),
                         kbError: document.getElementById('sel-kb-error'),
                         volMusic: document.getElementById('vol-music'),
-                        volSfx: document.getElementById('vol-sfx')
+                        volSfx: document.getElementById('vol-sfx'),
+                        alphaSpeed: document.getElementById('val-alpha-speed')
                     },
                     flash: document.getElementById('level-flash'),
                     flashTitle: document.getElementById('flash-title'),
@@ -887,7 +934,8 @@
                     miniUi: document.getElementById('minigame-ui'),
                     users: { hedy: document.getElementById('user-hedy'), keno: document.getElementById('user-keno') },
                     bgCanvas: document.getElementById('bg-canvas'),
-                    bgContainer: document.getElementById('global-bg')
+                    bgContainer: document.getElementById('global-bg'),
+                    alphaCanvas: document.getElementById('alpha-canvas')
                 };
                 
                 this.audio.setVolume('music', 80);
@@ -910,29 +958,31 @@
                 canvas.height = window.innerHeight;
 
                 if (mode === 'rain') {
-                    // Start Screen Rain: Big, Slow, Matrix-style but white
-                    const fontSize = 60; // Bigger font size
+                    // Start Screen Rain: Readable falling chars
+                    const fontSize = 60; 
                     const columns = canvas.width / fontSize;
                     const drops = [];
                     for(let i=0; i<columns; i++) drops[i] = Math.random() * -10;
 
                     this.bgInterval = setInterval(() => {
+                        // Higher opacity clear for shorter trail = better readability
                         ctx.fillStyle = "rgba(0, 0, 0, 0.15)"; 
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
                         ctx.font = fontSize + "px Fredoka";
                         
                         for(let i=0; i<drops.length; i++) {
-                            const text = String.fromCharCode(48 + Math.floor(Math.random()*10)); // Numbers
-                            ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+                            const text = String.fromCharCode(65 + Math.floor(Math.random()*26)); // A-Z
+                            // Fixed spacing to prevent overlap
+                            ctx.fillText(text, i*fontSize + 10, drops[i]*fontSize);
+                            
                             if(drops[i]*fontSize > canvas.height && Math.random() > 0.98) drops[i] = 0;
-                            drops[i] += 0.25; // Slower speed
+                            drops[i] += 0.2; 
                         }
-                    }, 70);
+                    }, 50);
                 } else if (mode === 'animals') {
-                    // Modal Screen: Walking Animals
                     const animalCount = param || 1;
-                    const emojis = ['🦊', '🦄', '🐻', '🐰', '🐱', '🐷', '🤖', '🐶', '🐕', '🐩']; // Added dogs
+                    const emojis = ['🦊', '🦄', '🐻', '🐰', '🐱', '🐷', '🤖', '🐶', '🐕', '🐩'];
                     const walkers = [];
                     for(let i=0; i<animalCount; i++) {
                         walkers.push({
@@ -945,7 +995,7 @@
                     }
 
                     this.bgInterval = setInterval(() => {
-                        ctx.clearRect(0,0, canvas.width, canvas.height); // Clear for clean movement
+                        ctx.clearRect(0,0, canvas.width, canvas.height); 
                         for(let w of walkers) {
                             ctx.font = w.size + "px serif";
                             ctx.fillText(w.icon, w.x, w.y);
@@ -956,6 +1006,199 @@
                 } else {
                     ctx.clearRect(0,0, canvas.width, canvas.height);
                 }
+            }
+
+            // --- LEVEL 101 LOGIC (ALPHA GAME) ---
+            startAlphaGame() {
+                this.isAlphaGame = true;
+                this.ui.alphaCanvas.style.display = 'block';
+                document.getElementById('alpha-speed-ctrl').classList.remove('hidden'); // Show slider
+                
+                this.world.setDualMascots(true); // Left/Right animals
+                
+                const canvas = this.ui.alphaCanvas;
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                const trackColors = ["#FFCDD2", "#FFE0B2", "#FFF9C4", "#C8E6C9", "#C8E6C9", "#B3E5FC", "#B3E5FC", "#FFF9C4", "#FFE0B2", "#FFCDD2", "#FFCDD2"];
+                const keyMap = ['q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 'ü']; // Basic mapping to columns
+                // Actually need full mapping A-Z to 11 columns (0-10) based on keyboard layout logic
+                // Pinky L: q, a, y, <, 1 (Col 0)
+                // Ring L: w, s, x, 2 (Col 1)
+                // Mid L: e, d, c, 3 (Col 2)
+                // Idx L1: r, f, v, 4 (Col 3)
+                // Idx L2: t, g, b, 5 (Col 4)
+                // Idx R1: z, h, n, 6 (Col 5)
+                // Idx R2: u, j, m, 7 (Col 6)
+                // Mid R: i, k, ,, 8 (Col 7)
+                // Ring R: o, l, ., 9 (Col 8)
+                // Pinky R1: p, ö, -, 0 (Col 9)
+                // Pinky R2: ü, ä, +, ß (Col 10)
+
+                const colMap = {
+                    'a':0, 'q':0, 'y':0, '1':0, '<':0,
+                    's':1, 'w':1, 'x':1, '2':1,
+                    'd':2, 'e':2, 'c':2, '3':2,
+                    'f':3, 'r':3, 'v':3, '4':3,
+                    'g':4, 't':4, 'b':4, '5':4,
+                    'h':5, 'z':5, 'n':5, '6':5,
+                    'j':6, 'u':6, 'm':6, '7':6,
+                    'k':7, 'i':7, ',':7, '8':7,
+                    'l':8, 'o':8, '.':8, '9':8,
+                    'ö':9, 'p':9, '-':9, '0':9,
+                    'ä':10, 'ü':10, '+':10, 'ß':10, '#':10
+                };
+
+                const trackWidth = 70;
+                const totalWidth = 11 * trackWidth;
+                const startX = (canvas.width - totalWidth) / 2;
+                const targetY = canvas.height - 180; // Above keyboard
+                const tolerance = 50;
+
+                const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                let queue = letters.split('');
+                let activeNotes = [];
+                let particles = [];
+                let spawnTimer = 0;
+                let running = true;
+
+                // Stop previous loop logic
+                this.stopAlphaGame = () => {
+                    running = false;
+                    this.ui.alphaCanvas.style.display = 'none';
+                    document.getElementById('alpha-speed-ctrl').classList.add('hidden');
+                    this.isAlphaGame = false;
+                    this.world.setDualMascots(false);
+                };
+
+                const createAlphaExplosion = (x, y, color) => {
+                    for(let i=0; i<20; i++) {
+                        particles.push({ 
+                            x: x, y: y, 
+                            vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, 
+                            life: 1.0, color: color 
+                        });
+                    }
+                };
+
+                // Input Handler for Alpha Game
+                this.handleAlphaInput = (char) => {
+                    const lower = char.toLowerCase();
+                    const targetNoteIdx = activeNotes.findIndex(n => n.char.toLowerCase() === lower);
+                    
+                    if (targetNoteIdx > -1) {
+                        const note = activeNotes[targetNoteIdx];
+                        const diff = Math.abs(note.y - targetY);
+                        
+                        if (diff < tolerance) {
+                            // Perfect Hit
+                            createAlphaExplosion(note.x, note.y, "#fff");
+                            this.audio.playCorrect(note.char.charCodeAt(0));
+                            this.world.triggerDualReaction('hit');
+                            this.score += 20;
+                            activeNotes.splice(targetNoteIdx, 1);
+                        } else if (diff < tolerance * 2) {
+                            // Late/Early but hit
+                            this.score += 5;
+                            const type = note.y < targetY ? 'early' : 'late';
+                            this.world.triggerDualReaction(type);
+                            activeNotes.splice(targetNoteIdx, 1);
+                        } else {
+                            // Too far off - ignore or penalty
+                        }
+                        this.ui.display.score.innerText = this.score;
+                    }
+                };
+
+                const loop = () => {
+                    if (!running) return;
+                    ctx.clearRect(0,0, canvas.width, canvas.height);
+
+                    // Draw Tracks
+                    for(let i=0; i<11; i++) {
+                        ctx.fillStyle = trackColors[i];
+                        ctx.globalAlpha = 0.3;
+                        ctx.fillRect(startX + i*trackWidth, 0, trackWidth - 2, canvas.height);
+                    }
+                    ctx.globalAlpha = 1;
+
+                    // Draw Target Zone
+                    ctx.beginPath();
+                    ctx.moveTo(startX, targetY - tolerance);
+                    ctx.lineTo(startX + totalWidth, targetY - tolerance);
+                    ctx.moveTo(startX, targetY + tolerance);
+                    ctx.lineTo(startX + totalWidth, targetY + tolerance);
+                    ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+
+                    // Spawning
+                    const speed = parseInt(this.ui.inputs.alphaSpeed.value);
+                    if (queue.length > 0 && spawnTimer <= 0) {
+                        const char = queue.shift();
+                        const col = colMap[char.toLowerCase()] !== undefined ? colMap[char.toLowerCase()] : 5;
+                        activeNotes.push({
+                            char: char,
+                            x: startX + col * trackWidth + trackWidth/2,
+                            y: -50,
+                            col: col
+                        });
+                        spawnTimer = 150 - (speed * 10); // Adjust spawn rate based on speed
+                    }
+                    spawnTimer--;
+
+                    // Update & Draw Notes
+                    for (let i = 0; i < activeNotes.length; i++) {
+                        let n = activeNotes[i];
+                        n.y += speed * 0.8; // Fall speed
+
+                        // Draw Smartie
+                        ctx.beginPath();
+                        ctx.arc(n.x, n.y, 25, 0, Math.PI*2);
+                        ctx.fillStyle = trackColors[n.col];
+                        ctx.fill();
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = "#fff";
+                        ctx.stroke();
+                        
+                        ctx.fillStyle = "#4A404F";
+                        ctx.font = "bold 24px Fredoka";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(n.char, n.x, n.y);
+
+                        // Missed?
+                        if (n.y > canvas.height) {
+                            activeNotes.splice(i, 1);
+                            i--;
+                            this.audio.playWrong();
+                            this.errors++;
+                        }
+                    }
+
+                    // Particles
+                    for (let i = 0; i < particles.length; i++) {
+                        let p = particles[i];
+                        p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                        ctx.globalAlpha = p.life;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+                        ctx.fill();
+                        if (p.life <= 0) { particles.splice(i, 1); i--; }
+                    }
+                    ctx.globalAlpha = 1;
+
+                    // Win Condition
+                    if (queue.length === 0 && activeNotes.length === 0 && particles.length === 0) {
+                        this.levelComplete();
+                        running = false;
+                    }
+
+                    requestAnimationFrame(loop);
+                };
+                loop();
             }
 
             loadUserScores() {
@@ -999,13 +1242,12 @@
                         const keyDiv = document.createElement('div'); keyDiv.className = 'key';
                         keyDiv.textContent = char.length > 2 ? char : char.toUpperCase();
                         const dataChar = char.toLowerCase();
-                        keyDiv.dataset.char = dataChar; // Default normal char
-                        keyDiv.dataset.normal = char; // Store normal state
+                        keyDiv.dataset.char = dataChar; 
+                        keyDiv.dataset.normal = char; 
                         
-                        // Calculate shifted char
                         let shifted = char.toUpperCase();
                         if (this.shiftMap[char]) shifted = this.shiftMap[char];
-                        keyDiv.dataset.shifted = shifted; // Store shifted state
+                        keyDiv.dataset.shifted = shifted; 
 
                         if(char.length > 1) keyDiv.classList.add(char === ' ' ? 'space' : 'wide');
                         if(char === 'Enter' || char === 'Shift' || char === 'Del' || char === 'Tab' || char === 'Caps') keyDiv.classList.add('cmd');
@@ -1028,12 +1270,9 @@
                 keys.forEach(k => {
                     if (k.dataset.shifted) {
                         const newChar = active ? k.dataset.shifted : k.dataset.normal;
-                        // For letters, we just uppercase visually but handle logic usually via keycode, 
-                        // but for symbols we want to show the new symbol.
                         if (k.textContent.length === 1) {
                             k.textContent = newChar;
                         }
-                        // Update dataset char so highlight logic works for Shift chars (like " or !)
                         k.dataset.char = newChar.toLowerCase();
                     }
                 });
@@ -1073,7 +1312,10 @@
                         else if (!this.ui.screens.level.classList.contains('hidden')) this.startLevel(this.currentLevelIdx);
                         else if (!this.ui.screens.modal.classList.contains('hidden')) this.handleNextAction();
                     } else if (e.key === "Escape") { if (this.isGameActive || this.isPaused) this.togglePause(); }
-                    else { this.handleTyping(e); }
+                    else { 
+                        if(this.isAlphaGame) this.handleAlphaInput(e.key);
+                        else this.handleTyping(e); 
+                    }
                 });
                 
                 window.addEventListener('keyup', (e) => {
@@ -1118,6 +1360,7 @@
                 this.isGameActive = false; this.isPaused = false; 
                 this.ui.bgContainer.style.display = 'block'; 
                 this.initBackgroundEffect('rain'); 
+                if(this.stopAlphaGame) this.stopAlphaGame();
                 this.showScreen('level'); 
             }
             togglePause(forcePause = false) {
@@ -1161,6 +1404,10 @@
             startLevel(index) {
                 if (index >= LEVELS.length) index = 0;
                 this.currentLevelIdx = index;
+                
+                // Cleanup old Alpha Game if exists
+                if(this.stopAlphaGame) this.stopAlphaGame();
+
                 this.targetString = LEVELS[index].content;
                 this.currentIndex = 0; this.score = 0; this.errors = 0;
                 this.isGameActive = false; 
@@ -1188,13 +1435,29 @@
                         this.ui.flashCount.textContent = "LOS!";
                         this.isGameActive = true;
                         this.startTime = Date.now();
+                        
+                        // Check if Alpha Level
+                        if (LEVELS[index].id === 101) {
+                            this.startAlphaGame();
+                        }
+
                     } else {
                         clearInterval(countdown);
                         this.ui.flash.style.opacity = "0";
                     }
                 }, 1000);
 
-                this.updateDisplay(); this.showScreen('game'); this.highlightKey(this.targetString[0]);
+                // Setup Display for standard vs alpha
+                if (LEVELS[index].id !== 101) {
+                    this.updateDisplay(); 
+                    this.showScreen('game'); 
+                    this.highlightKey(this.targetString[0]);
+                } else {
+                    // Alpha setup hides standard text display
+                    this.ui.display.current.textContent = "";
+                    this.ui.display.next.textContent = "";
+                    this.showScreen('game');
+                }
             }
 
             handleTyping(e) {
@@ -1255,18 +1518,32 @@
 
             levelComplete() {
                 this.isGameActive = false; this.audio.playWin();
-                const totalChars = this.targetString.length;
-                const durationMinutes = (Date.now() - this.startTime) / 60000;
-                const cpm = totalChars / durationMinutes;
-                const targetCPM = 60;
-                let speedPct = Math.round((cpm / targetCPM) * 100); if(speedPct > 100) speedPct = 100;
-                const totalKeystrokes = totalChars + this.errors;
-                let accPct = 100; if(totalKeystrokes > 0) accPct = Math.round(((totalChars) / totalKeystrokes) * 100); if(accPct < 0) accPct = 0;
                 
-                let stars = 1; 
-                if (speedPct >= 40 && accPct >= 40) stars = 2; 
-                if (speedPct >= 60 && accPct >= 60) stars = 3; 
-                if (speedPct >= 80 && accPct >= 80) stars = 4; 
+                // Special Scoring for Alpha Level
+                let stars = 1;
+                let speedPct = 0;
+                let accPct = 0;
+
+                if (this.currentLevelIdx === LEVELS.length - 1) { // Level 101
+                    // Logic based on score and errors
+                    if(this.errors === 0) stars = 4;
+                    else if(this.errors < 3) stars = 3;
+                    else if(this.errors < 6) stars = 2;
+                    speedPct = 100; // Just for display
+                    accPct = Math.max(0, 100 - (this.errors * 5));
+                } else {
+                    const totalChars = this.targetString.length;
+                    const durationMinutes = (Date.now() - this.startTime) / 60000;
+                    const cpm = totalChars / durationMinutes;
+                    const targetCPM = 60;
+                    speedPct = Math.round((cpm / targetCPM) * 100); if(speedPct > 100) speedPct = 100;
+                    const totalKeystrokes = totalChars + this.errors;
+                    accPct = 100; if(totalKeystrokes > 0) accPct = Math.round(((totalChars) / totalKeystrokes) * 100); if(accPct < 0) accPct = 0;
+                    
+                    if (speedPct >= 40 && accPct >= 40) stars = 2; 
+                    if (speedPct >= 60 && accPct >= 60) stars = 3; 
+                    if (speedPct >= 80 && accPct >= 80) stars = 4; 
+                }
                 
                 const lvlId = LEVELS[this.currentLevelIdx].id;
                 const oldScore = this.scores[lvlId] || 0;
@@ -1308,7 +1585,13 @@
                 setTimeout(() => { barSpeed.style.width = speedPct + "%"; barAcc.style.width = accPct + "%"; }, 100);
                 
                 textDisplay.innerHTML = "";
-                this.typedHistory.forEach(item => { const span = document.createElement('span'); span.textContent = item.char; span.className = item.type === 'correct' ? 'res-char correct' : 'res-char wrong'; textDisplay.appendChild(span); });
+                if(this.currentLevelIdx === LEVELS.length -1) {
+                     const span = document.createElement('span'); 
+                     span.textContent = "Alphabet Challenge gemeistert! 🎉"; 
+                     textDisplay.appendChild(span);
+                } else {
+                    this.typedHistory.forEach(item => { const span = document.createElement('span'); span.textContent = item.char; span.className = item.type === 'correct' ? 'res-char correct' : 'res-char wrong'; textDisplay.appendChild(span); });
+                }
                 
                 if (this.isLooping) modalBtn.innerText = "Wiederholen (Enter)"; else if (this.noBonus) modalBtn.innerText = "Nächstes Level (Enter)"; else modalBtn.innerText = "Bonus spielen (Enter)";
                 this.showScreen('modal');
@@ -1328,7 +1611,14 @@
                 this.ui.miniUi.classList.remove('hidden'); 
                 const canvas = document.getElementById('mini-game-canvas'); canvas.style.display = 'block';
                 const ctx = canvas.getContext('2d'); canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-                const rawKeys = LEVELS[this.currentLevelIdx].keys; const possible = (rawKeys + rawKeys.toUpperCase()).replace("Shift", "");
+                
+                // Fallback for empty keys (Level 101 has 'all' as key string placeholder, logic handles it)
+                let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                if(LEVELS[this.currentLevelIdx].id !== 101) {
+                     const rawKeys = LEVELS[this.currentLevelIdx].keys; 
+                     possible = (rawKeys + rawKeys.toUpperCase()).replace("Shift", "");
+                }
+
                 let gameRunning = true; const letters = []; let particles = []; let fedCount = 0; const maxFed = 10;
                 const spawner = setInterval(() => {
                     if (!gameRunning) return;
@@ -1344,7 +1634,7 @@
                 this.ui.buttons.skip.onclick = () => endGame();
                 const miniHandler = (e) => {
                     if(e.key === "Escape") { endGame(); return; }
-                    const char = e.key; const idx = letters.findIndex(l => l.char === char && l.y < canvas.height - 100);
+                    const char = e.key; const idx = letters.findIndex(l => l.char.toLowerCase() === char.toLowerCase() && l.y < canvas.height - 100);
                     if (idx > -1) { const l = letters[idx]; createExplosion(l.x, l.y); letters.splice(idx, 1); fedCount++; this.audio.playCorrect(fedCount); this.world.triggerReaction(); if(fedCount >= maxFed) endGame(); }
                 };
                 window.addEventListener('keydown', miniHandler);
