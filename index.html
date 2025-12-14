@@ -1,13 +1,3 @@
-Alles klar, das sind die letzten Feinschliffe\!
-
-Hier sind die Änderungen:
-
-1.  **Matrix-Effekt (Hintergrund):** Die Zahlen sind jetzt riesig (Schriftgröße 90 statt 30) und fallen sehr langsam und majestätisch. Das wirkt jetzt viel ruhiger und "magischer".
-2.  **Tiere (Gewonnen-Bildschirm):** Ich habe die Liste der laufenden Tiere um drei Hunde-Emojis erweitert (🐶, 🐕, 🐩), um Billy, Luni und Charlie zu repräsentieren.
-
-Hier ist der finale, komplette Code:
-
-```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -48,7 +38,7 @@ Hier ist der finale, komplette Code:
         }
         @keyframes rainbowBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
-        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.3; }
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.4; } /* Opacity slightly up for visibility */
 
         /* --- UI OVERLAY --- */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
@@ -305,6 +295,9 @@ Hier ist der finale, komplette Code:
                     <option value="bunny">🐰 Hase</option>
                     <option value="cat">🐱 Katze</option>
                     <option value="pig">🐷 Schweinchen</option>
+                    <option value="dog_billy">🐶 Billy</option>
+                    <option value="dog_luni">🐕 Luni</option>
+                    <option value="dog_charlie">🐩 Charlie</option>
                     <option value="robot">🤖 Roboter</option>
                     <option value="random">🎲 Zufall</option>
                 </select>
@@ -709,7 +702,11 @@ Hier ist der finale, komplette Code:
             }
             createCharacter(type, group) {
                 while(group.children.length > 0){ group.remove(group.children[0]); }
-                const colors = { fox: 0xFF9AA2, unicorn: 0xFFFFFF, bear: 0x8D6E63, bunny: 0xF0F4C3, cat: 0xB0BEC5, pig: 0xF48FB1, robot: 0x78909C, npc: 0x555555 };
+                const colors = { 
+                    fox: 0xFF9AA2, unicorn: 0xFFFFFF, bear: 0x8D6E63, bunny: 0xF0F4C3, 
+                    cat: 0xB0BEC5, pig: 0xF48FB1, robot: 0x78909C, npc: 0x555555,
+                    dog_billy: 0x8D6E63, dog_luni: 0xFFE082, dog_charlie: 0x3E2723 
+                };
                 const col = colors[type] || 0xFF9AA2;
                 const matBody = new THREE.MeshStandardMaterial({ color: col });
                 
@@ -914,13 +911,13 @@ Hier ist der finale, komplette Code:
 
                 if (mode === 'rain') {
                     // Start Screen Rain: Big, Slow, Matrix-style but white
-                    const fontSize = 90; // Bigger font size
+                    const fontSize = 60; // Bigger font size
                     const columns = canvas.width / fontSize;
                     const drops = [];
                     for(let i=0; i<columns; i++) drops[i] = Math.random() * -10;
 
                     this.bgInterval = setInterval(() => {
-                        ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; 
+                        ctx.fillStyle = "rgba(0, 0, 0, 0.15)"; 
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
                         ctx.font = fontSize + "px Fredoka";
@@ -929,9 +926,9 @@ Hier ist der finale, komplette Code:
                             const text = String.fromCharCode(48 + Math.floor(Math.random()*10)); // Numbers
                             ctx.fillText(text, i*fontSize, drops[i]*fontSize);
                             if(drops[i]*fontSize > canvas.height && Math.random() > 0.98) drops[i] = 0;
-                            drops[i] += 0.15; // Slower speed
+                            drops[i] += 0.25; // Slower speed
                         }
-                    }, 50);
+                    }, 70);
                 } else if (mode === 'animals') {
                     // Modal Screen: Walking Animals
                     const animalCount = param || 1;
@@ -1368,4 +1365,3 @@ Hier ist der finale, komplette Code:
     </script>
 </body>
 </html>
-```
